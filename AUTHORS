@@ -1,0 +1,15 @@
+ mBench Authors
+ ==============
+
+Some pieces of the code has been downloaded from the Internet
+and following people are their authors:
+   Painter Engineering, Inc (in year 1998) for Whetstone code
+   Reinhold P. Weicker (in year 1984) for Dhrystone code
+   Will Menninger (in 1993) for Linpack code
+
+The rest of the mBench code has been developed by:
+
+   Michal Novotny <minovotn-at-redhat-dot-com>
+
+  <...send a patch & get your name here...>
+

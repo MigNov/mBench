@@ -1,0 +1,38 @@
+ mBench benchmarking tool
+ ========================
+
+This application has been written for purposes of benchmarking and
+getting/measuring the information from the host system. It can
+get various CPU information (CPU affinity for the process - both
+getting and setting, measured CPU speed, benchmarking CPU Dhrystone
+and Whetstone values and also it can calculate the LinPack - former
+version of LAPack), memory size and it can also perform disk and
+network I/O benchmarking with capability to output the results as
+a plain text or in csv or xml format.
+
+The whole application is written in C language with requirements for
+math library (libm) with some GPL pieces (Dhrystone, Whetstone, Linpack)
+downloaded from the Internet and merged into this tool. The original
+comments and authors have been preserved in the source files of those
+pieces but the functions have been slightly modified to return values
+of scores as floats.
+
+Terminology
+-----------
+
+This app should be referred to as mBench.
+
+Pre-requisite software
+----------------------
+
+Where versions are noted below these are the versions tested to definitely
+work. For some of them you may be able to run with earlier releases, so
+please report any success to the mailing lists
+
+ libm
+
+Copyright /  License
+--------------------
+
+All the application code is covered under the GPL licence.
+
