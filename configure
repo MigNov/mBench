@@ -104,6 +104,11 @@ IFS=$as_save_IFS
 
      ;;
 esac
+
+rpm_showrc=$(rpm --showrc | grep "_topdir[[:blank:]]")
+rpm_topdir=${rpm_showrc#*[[:blank:]]}
+rpm_topdir=${rpm_topdir#*[[:blank:]]}
+
 # We did not find ourselves, most probably we were run as `sh COMMAND'
 # in which case we are not to be found in the path.
 if test "x$as_myself" = x; then
@@ -628,6 +633,7 @@ sbindir
 bindir
 program_transform_name
 prefix
+rpm_topdir
 exec_prefix
 PACKAGE_URL
 PACKAGE_BUGREPORT
@@ -699,6 +705,12 @@ psdir='${docdir}'
 libdir='${exec_prefix}/lib'
 localedir='${datarootdir}/locale'
 mandir='${datarootdir}/man'
+
+# RPM top dir location
+rpm_showrc=$(rpm --showrc | grep "_topdir[[:blank:]]")
+rpm_topdir=${rpm_showrc#*[[:blank:]]}
+rpm_topdir=${rpm_topdir#*[[:blank:]]}
+ac_rpm_topdir=$rpm_topdir
 
 ac_prev=
 ac_dashdash=
@@ -1308,6 +1320,7 @@ ac_abs_top_builddir=$ac_pwd
 ac_abs_builddir=$ac_pwd$ac_dir_suffix
 # for backward compatibility:
 ac_top_builddir=$ac_top_build_prefix
+ac_rpm_topdir=$rpm_topdir
 
 case $srcdir in
   .)  # We are building in place.
@@ -4055,6 +4068,7 @@ gives unlimited permission to copy, distribute and modify it."
 
 ac_pwd='$ac_pwd'
 srcdir='$srcdir'
+ac_rpm_topdir='$rpm_topdir'
 INSTALL='$INSTALL'
 MKDIR_P='$MKDIR_P'
 AWK='$AWK'
@@ -4590,6 +4604,7 @@ ac_abs_top_builddir=$ac_pwd
 ac_abs_builddir=$ac_pwd$ac_dir_suffix
 # for backward compatibility:
 ac_top_builddir=$ac_top_build_prefix
+ac_rpm_topdir=$ac_rpm_topdir
 
 case $srcdir in
   .)  # We are building in place.
@@ -4675,6 +4690,7 @@ s&@top_srcdir@&$ac_top_srcdir&;t t
 s&@abs_top_srcdir@&$ac_abs_top_srcdir&;t t
 s&@builddir@&$ac_builddir&;t t
 s&@abs_builddir@&$ac_abs_builddir&;t t
+s&@rpm_topdir@&$ac_rpm_topdir&;t t
 s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
 s&@INSTALL@&$ac_INSTALL&;t t
 s&@MKDIR_P@&$ac_MKDIR_P&;t t

@@ -182,6 +182,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+rpm_topdir = @rpm_topdir@
 SUBDIRS = src
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
@@ -474,6 +475,14 @@ dist dist-all: distdir
 	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
 	$(am__remove_distdir)
 
+rpm:	dist-xz
+	cp *.tar.xz $(rpm_topdir)/SOURCES/$(PACKAGE_NAME).tar.xz
+	rpmbuild -bb SPEC/$(PACKAGE_NAME).spec
+
+srpm:	dist-xz
+	cp *.tar.xz $(rpm_topdir)/SOURCES/$(PACKAGE_NAME).tar.xz
+	rpmbuild -bs SPEC/$(PACKAGE_NAME).spec
+
 # This target untars the dist file and tries a VPATH configuration.  Then
 # it guarantees that the distribution is self-contained by making another
 # tarfile.
@@ -586,6 +595,8 @@ clean-am: clean-generic mostlyclean-am
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f Makefile
+	-rm -f *.tar.xz
+	-rm -rf autom4te.cache
 distclean-am: clean-am distclean-generic distclean-hdr distclean-tags
 
 dvi: dvi-recursive

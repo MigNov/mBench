@@ -150,7 +150,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-mbench_SOURCES = main.c common.c cpu.c memory.c dhrystone.c whetstone.c linpack.c disk_io.c net_io.c
+mbench_SOURCES = main.c common.c cpu.c memory.c dhrystone.c whetstone.c linpack.c disk_io.c net_io.c utils.h
 mbench_CFLAGS = -Wall
 all: all-am
 
