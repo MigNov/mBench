@@ -49,6 +49,7 @@ do {} while(0)
 
 int lpArrSize = 0;
 unsigned long long dioBufSize = 0;
+unsigned long long nioBufSize = 0;
 int prec = 2;
 char tempDir[1024] = { 0 };
 int outType = FORMAT_PLAIN;
@@ -78,25 +79,54 @@ void usage(char *name)
 {
 	printf(	"Syntax: %s [options]\n\n"
 			"where option could be one of following:\n\n"
-			"\t--cpu-affinity-get              get the CPU affinity\n"
-			"\t--cpu-affinity-set <mask>       set the CPU affinity to <mask>\n"
-			"\t--cpu-get                       get the CPU information (total/online)\n"
-			"\t--cpu-get-speed                 get (measure) the CPU speed\n"
-			"\t--cpu-get-dhrystone             get the CPU Dhrystone in DMIPS\n"
-			"\t--cpu-get-whetstone             get the CPU Whetstone in MIPS\n"
-			"\t--cpu-get-linpack <size>        get the CPU Linpack score for specified array size (e.g. 200)\n"
-			"\t--cpu-all <linpack-size>        perform all CPU-related tests and also get memory size\n"
-			"\t--memory-get                    get the physical memory size\n"
+			"\t--cpu-affinity-get                     get the CPU affinity\n"
+			"\t--cpu-affinity-set <mask>              set the CPU affinity to <mask>\n"
+			"\t--cpu-get                              get the CPU information (total/online)\n"
+			"\t--cpu-get-speed                        get (measure) the CPU speed\n"
+			"\t--cpu-get-dhrystone                    get the CPU Dhrystone in DMIPS\n"
+			"\t--cpu-get-whetstone                    get the CPU Whetstone in MIPS\n"
+			"\t--cpu-get-linpack <size>               get the CPU Linpack score for specified array size (e.g. 200)\n"
+			"\t--cpu-all <linpack-size>               perform all CPU-related tests and also get memory size\n"
+			"\t--memory-get                           get the physical memory size\n"
 #ifdef ENABLE_MEM_DUMP
-			"\t--memory-dump                   dump the memory\n"
+			"\t--memory-dump                          dump the memory\n"
 #endif
-			"\t--precision <precision>         set precision value for floating point values (default value: 2)\n"
-			"\t--temp-dir <dir>                set the temporary directory to dir\n"
-			"\t--disk-get-benchmark <size>     get the benchmark statistics for disk I/O for test data of <size> kB\n"
-			"\t--net-benchmark-server :<port>  create the server on local <port> for network I/O benchmarking\n"
-			"\t--net-benchmark-client <host>   connect to host[:port] defined by <host> to perform I/O benchmarking\n"
-			"\t--format <format>               output results in <format> (can be plain, xml or csv)\n\n",
+			"\t--precision <precision>                set precision value for floating point values (default value: 2)\n"
+			"\t--temp-dir <dir>                       set the temporary directory to <dir>\n"
+			"\t--disk-get-benchmark <size>            get the benchmark statistics for disk I/O for test data of <size> (supports k, M, G suffixes)\n"
+			"\t--net-benchmark-server :<port>         create the server on local <port> for network I/O benchmarking\n"
+			"\t--net-benchmark-client <host> <size>   connect to host[:port] defined by <host> to perform I/O benchmarking for <size> (k, M, G suffixed)\n"
+			"\t--format <format>                      output results in <format> (can be plain, xml or csv)\n\n",
 			name);
+}
+
+unsigned long long argvToSize(char *arg)
+{
+	int unit, multiplicator = 1, nodel = 0;
+
+	if ((arg == NULL) || (strlen(arg) == 0))
+		return 0;
+
+	unit = arg[strlen(arg)-1];
+	switch (arg[strlen(arg)-1]) {
+		case 'k':
+		case 'K':
+			multiplicator = 1 << 10;
+			break;
+		case 'M':
+			multiplicator = 1 << 20;
+			break;
+		case 'G':
+			multiplicator = 1 << 30;
+			break;
+		default:
+			nodel = 1;
+	}
+
+	if (nodel == 0)
+		arg[strlen(arg) - 1] = 0;
+
+	return atoi(arg) * multiplicator;
 }
 
 int parse_args(int argc, char *argv[])
@@ -168,7 +198,7 @@ int parse_args(int argc, char *argv[])
 			case 'i':
 					flags |= FLAG_DISK_STAT;
 					if (optarg != NULL)
-						dioBufSize = atoi(optarg) * (1 << 10);
+						dioBufSize = argvToSize(optarg);
 					break;
 			case 'n':
 					flags |= FLAG_NETS_STAT;
@@ -187,9 +217,16 @@ int parse_args(int argc, char *argv[])
 						lpArrSize = atoi(optarg);
 					break;
 			case 'e':
+					if ((argc < idx + 2) || (argv[idx + 2] == NULL)) {
+						fprintf(stderr, "Error: Network I/O buffer is missing.\n"
+								"Syntax: %s --net-benchmark-client <host> <size>\n\n",
+								argv[0]);
+						break;
+					}
 					flags |= FLAG_NETC_STAT;
 					if (optarg != NULL)
 						net_set_host(optarg, 0);
+					nioBufSize = argvToSize(argv[idx + 2]);
 					break;
 #ifdef ENABLE_MEM_DUMP
 			case 'd':
@@ -353,7 +390,6 @@ void disk_io_process(unsigned long long size, long files)
 
 void net_io_process(int server)
 {
-	unsigned long nioSizeArray[8] = { 16, 32, 64, 128, 256, 512, 1024, 2048 };			// in MB
 	unsigned long nioBufferArray[6] = { 4, 128, 512, 1024, 2048, 4096 };				// in kB
 	int err;
 
@@ -372,38 +408,35 @@ void net_io_process(int server)
 		if (sock <= 0)
 			fprintf(stderr, "Connection to %s failed: %s\n", net_get_connect_addr(), strerror(-sock));
 		else {
-			int i, ii, nioIdx;
+			int ii, nioIdx;
 			float tm = 0.0, cpu = 0.0;
 
-			results->net_res_size = (sizeof(nioSizeArray) / sizeof(nioSizeArray[0])) *
-									(sizeof(nioBufferArray) / sizeof(nioBufferArray[0]));
+			results->net_res_size = (sizeof(nioBufferArray) / sizeof(nioBufferArray[0]));
 
 			fprintf(stderr, "Network: Getting %d results, this may take some time\n", results->net_res_size);
 
 			results->net = (tIOResults *)malloc( results->net_res_size * sizeof(tIOResults) );
 			nioIdx = 0;
 
-			for (i = 0; i < (sizeof(nioSizeArray) / sizeof(nioSizeArray[0])); i++)
-				for (ii = 0; ii < (sizeof(nioBufferArray) / sizeof(nioBufferArray[0])); ii++) {
-						unsigned long long total = 0, chunk = 0;
-						char size_total[16] = { 0 }, size_chunk[16] = { 0 }, size_thp[16] = { 0 };
+			for (ii = 0; ii < (sizeof(nioBufferArray) / sizeof(nioBufferArray[0])); ii++) {
+				unsigned long long total = 0, chunk = 0;
+				char size_total[16] = { 0 }, size_chunk[16] = { 0 }, size_thp[16] = { 0 };
 
-						total = (unsigned long long)nioSizeArray[i] * (1 << 20);
-						chunk = (unsigned long long)nioBufferArray[ii] * (1 << 10);
-						net_write_command(sock, total, chunk, chunk, &tm, &cpu);
+				total = nioBufSize;
+				chunk = (unsigned long long)nioBufferArray[ii] * (1 << 10);
+				net_write_command(sock, total, chunk, chunk, &tm, &cpu);
 
-						strncpy(results->net[nioIdx].operation, NET_OP_READ(outType), sizeof(results->net[nioIdx].operation));
-						results->net[nioIdx].size = total;
-						results->net[nioIdx].throughput = total / tm;
-						results->net[nioIdx].chunk_size = chunk;
-						results->net[nioIdx++].cpu_usage = cpu;
+				strncpy(results->net[nioIdx].operation, NET_OP_READ(outType), sizeof(results->net[nioIdx].operation));
+				results->net[nioIdx].size = total;
+				results->net[nioIdx].throughput = total / tm;
+				results->net[nioIdx].chunk_size = chunk;
+				results->net[nioIdx++].cpu_usage = cpu;
 
-						io_get_size(total, 0, size_total, 16);
-						io_get_size(chunk, 0, size_chunk, 16);
-						io_get_size_double(total / tm, prec, size_thp, 16);
-						DPRINTF("Network benchmark on %s with buffer size %s: %s/s (CPU: %.*f%%)\n", size_total, size_chunk, size_thp, prec, cpu);
-					}
-
+				io_get_size(total, 0, size_total, 16);
+				io_get_size(chunk, 0, size_chunk, 16);
+				io_get_size_double(total / tm, prec, size_thp, 16);
+				DPRINTF("Network benchmark on %s with buffer size %s: %s/s (CPU: %.*f%%)\n", size_total, size_chunk, size_thp, prec, cpu);
+			}
 
 			if (net_server_terminate(sock))
 				DPRINTF("Server socket terminated\n");
