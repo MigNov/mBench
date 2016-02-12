@@ -34,8 +34,8 @@ do { fprintf(stderr, "debug: " fmt , ## __VA_ARGS__); } while (0)
 do {} while(0)
 #endif
 
-#define FLAG_CA_GET			0x01
-#define FLAG_CA_SET			0x02
+#define FLAG_CA_GET		0x01
+#define FLAG_CA_SET		0x02
 #define FLAG_CPU_GET		0x04
 #define FLAG_CPU_SPEED		0x08
 #define FLAG_MEM_GET		0x10
@@ -612,7 +612,7 @@ void printResults(int flags, int type)
 			printf("\t\t<dhrystone />\n");
 
 		if (flags & FLAG_CPU_WHETSTONE)
-			printf("\t\t<whetstone>%ld</dhrystone>\n", results->cpu_whetstone);
+			printf("\t\t<whetstone>%ld</whetstone>\n", results->cpu_whetstone);
 		else
 			printf("\t\t<whetstone />\n");
 
